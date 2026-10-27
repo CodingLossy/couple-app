@@ -1,0 +1,25 @@
+[Unit]
+Description=两个人
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=couple
+Group=couple
+WorkingDirectory=@ROOT@
+EnvironmentFile=@ROOT@/.env
+Environment=NODE_ENV=production
+ExecStart=@NODE@ server/index.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=@ROOT@/data @ROOT@/backups
+MemoryMax=512M
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target

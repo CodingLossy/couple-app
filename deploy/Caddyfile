@@ -1,0 +1,14 @@
+# 仅在这台机器的 80/443 空闲时，配合 docker compose --profile caddy 使用。
+# 已有反向代理时不要启动这个容器，改用 Caddyfile.snippet。
+# 需要证书到期邮件时，在文件最上面加上：
+# {
+# 	email you@example.com
+# }
+
+{$DOMAIN} {
+	encode gzip
+	request_body {
+		max_size 20MB
+	}
+	reverse_proxy app:8787
+}
