@@ -1,0 +1,27 @@
+{
+  "name": "couple-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "只给两个人用的私密小站",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "icons": "node scripts/gen-icons.js",
+    "backup": "node scripts/make-backup.js",
+    "restore": "node scripts/restore-backup.js",
+    "reset-password": "node scripts/reset-password.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "busboy": "^1.6.0",
+    "heic-convert": "^2.1.0",
+    "sharp": "^0.35.5",
+    "web-push": "^3.6.7",
+    "yauzl": "^2.10.0",
+    "yazl": "^2.5.1"
+  }
+}

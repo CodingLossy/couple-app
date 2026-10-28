@@ -1,0 +1,11 @@
+node_modules/
+data/
+backups/
+data-before-restore-*/
+.env
+*.log
+.DS_Store
+tmp/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

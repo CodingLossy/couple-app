@@ -1,0 +1,11 @@
+node_modules
+data
+backups
+data-before-restore-*
+.git
+.github
+tests
+.env
+*.log
+npm-debug.log
+README.md

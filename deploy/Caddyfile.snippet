@@ -1,0 +1,10 @@
+# 加到已经在跑的 Caddy 里，单独一个站点。应用固定在网站根路径，不要放到子目录。
+# 把 couple.example.com 换成你们的域名。应用监听 127.0.0.1:8787。
+
+couple.example.com {
+	encode gzip
+	request_body {
+		max_size 20MB
+	}
+	reverse_proxy 127.0.0.1:8787
+}
