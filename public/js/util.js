@@ -74,24 +74,50 @@ export async function api(path, options = {}) {
   return data;
 }
 
-export function icon(name) {
-  const paths = {
-    home: ['M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z'],
-    album: ['M4 6.5h16v12H4z', 'M8 14.5l2.2-2.6 2 2.2 1.8-1.6L17 14.5'],
-    diary: ['M7 4.5h9a2 2 0 0 1 2 2v13H8.5A2.5 2.5 0 0 1 6 17V6.5A2 2 0 0 1 8 4.5'],
-    list: ['M9 7h10', 'M9 12h10', 'M9 17h10', 'M5 7h.01', 'M5 12h.01', 'M5 17h.01'],
-    ask: ['M5 6.5h14v8H9l-4 3.5v-11.5z'],
-    cal: ['M7 4.5h10a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1z', 'M6 9h12', 'M9 3.5v3', 'M15 3.5v3'],
-  };
+const ICONS = {
+  home: {
+    line: ['M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z'],
+    fill: ['M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z'],
+  },
+  album: {
+    line: ['M4 6.5h16v12H4z', 'M8 14.5l2.2-2.6 2 2.2 1.8-1.6L17 14.5'],
+    fill: ['M4 5.5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-12a1 1 0 0 1 1-1z'],
+  },
+  diary: {
+    line: ['M7 4.5h9a2 2 0 0 1 2 2V19H8.5A2.5 2.5 0 0 1 6 16.5V6.5A2 2 0 0 1 8 4.5z'],
+    fill: ['M8 3.5h8.5A2.5 2.5 0 0 1 19 6v14H8.2A3.2 3.2 0 0 1 5 16.8V6.5A3 3 0 0 1 8 3.5z'],
+  },
+  list: {
+    line: ['M9 7h10', 'M9 12h10', 'M9 17h10', 'M5 7h.01', 'M5 12h.01', 'M5 17h.01'],
+    fill: ['M4 5h16a1 1 0 0 1 1 1v3H3V6a1 1 0 0 1 1-1z', 'M3 11h18v3H3z', 'M3 16h18v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z'],
+  },
+  cal: {
+    line: ['M7 4.5h10a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1z', 'M6 9h12', 'M9 3.5v3', 'M15 3.5v3'],
+    fill: ['M7 3h2v2h6V3h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z', 'M5 9h14v2H5z'],
+  },
+};
+
+export function icon(name, filled = false) {
+  const spec = ICONS[name] || ICONS.home;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('fill', 'none');
   svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-width', '1.8');
+  svg.setAttribute('stroke-width', filled ? '2.2' : '1.7');
   svg.setAttribute('stroke-linecap', 'round');
   svg.setAttribute('stroke-linejoin', 'round');
-  for (const d of paths[name] || paths.home) {
+  if (filled) {
+    const plate = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    plate.setAttribute('cx', '12');
+    plate.setAttribute('cy', '12');
+    plate.setAttribute('r', '11');
+    plate.setAttribute('fill', 'currentColor');
+    plate.setAttribute('opacity', '0.16');
+    plate.setAttribute('stroke', 'none');
+    svg.append(plate);
+  }
+  for (const d of spec.line) {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', d);
     svg.append(path);

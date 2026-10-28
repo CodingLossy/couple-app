@@ -65,7 +65,16 @@ function presentMe(db, userId) {
     timezone: getSetting(db, 'timezone'),
     reminderHour: Number(getSetting(db, 'reminder_hour', '9')),
     pushDevices,
+    coverPhotoId: coverPhotoId(db),
   };
+}
+
+function coverPhotoId(db) {
+  const raw = getSetting(db, 'cover_photo_id', '');
+  if (!/^\d+$/.test(raw || '')) return null;
+  const id = Number(raw);
+  const photo = db.prepare("SELECT id FROM photos WHERE id = ? AND kind = 'album'").get(id);
+  return photo ? photo.id : null;
 }
 
 function presentAnniversary(row, today) {
@@ -440,6 +449,15 @@ export function registerRoutes(router, ctx) {
     if (body.togetherSince != null) setSetting(ctx.db, 'together_since', asDate(body.togetherSince, '在一起的日期'));
     if (body.timezone != null) setSetting(ctx.db, 'timezone', asZone(body.timezone));
     if (body.reminderHour != null) setSetting(ctx.db, 'reminder_hour', String(asHour(body.reminderHour)));
+    if (Object.prototype.hasOwnProperty.call(body, 'coverPhotoId')) {
+      if (body.coverPhotoId == null || body.coverPhotoId === '') setSetting(ctx.db, 'cover_photo_id', '');
+      else {
+        const id = asId(body.coverPhotoId);
+        const photo = ctx.db.prepare("SELECT id FROM photos WHERE id = ? AND kind = 'album'").get(id);
+        if (!photo) throw httpError(400, '这张照片不能用作封面');
+        setSetting(ctx.db, 'cover_photo_id', String(id));
+      }
+    }
     sendJson(res, 200, { me: presentMe(ctx.db, user.id) });
   });
 
@@ -483,6 +501,7 @@ export function registerRoutes(router, ctx) {
       togetherSince: me.togetherSince,
       myName: me.displayName,
       partnerName: me.partner?.displayName || '',
+      coverPhotoId: me.coverPhotoId,
       anniversaries: rows.map((row) => presentAnniversary(row, now.date)).sort(sortAnniversaries),
     });
   });

@@ -1,4 +1,4 @@
-const CACHE = 'couple-shell-v3';
+const CACHE = 'couple-shell-v4';
 const SHELL = ['/', '/css/app.css', '/js/app.js', '/js/util.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 const PAGES = new Set(['/', '/#home', '/#album', '/#diary', '/#list', '/#ask', '/#cal', '/#settings', '/#guide']);
 

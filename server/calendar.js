@@ -242,7 +242,7 @@ export function registerCalendar(router, ctx, { requireUser, notifyPartner }) {
     for (const row of anniversaries) {
       const date = occurrenceInMonth(row.date, row.yearly === 1, month);
       if (!date) continue;
-      events.push({ kind: 'anniversary', date, id: row.id, title: row.title, yearly: row.yearly === 1 });
+      events.push({ kind: 'anniversary', date, id: row.id, title: row.title, yearly: row.yearly === 1, sourceDate: row.date });
     }
     const todos = visibleTodos(ctx.db, user.id);
     const undated = [];
