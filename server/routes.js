@@ -16,6 +16,7 @@ import {
 import { createSession, hashPassword, readSession, revokeToken, revokeUserSessions, verifyPassword } from './auth.js';
 import { emptyMedia, mediaPath, processImage, removeStored } from './images.js';
 import { registerCalendar } from './calendar.js';
+import { registerEat } from './eat.js';
 import { daysBetween, daysTogether, nextOccurrence, zonedParts } from './time.js';
 import {
   asDate,
@@ -358,6 +359,7 @@ function meta(ctx) {
 
 export function registerRoutes(router, ctx) {
   registerCalendar(router, ctx, { requireUser, notifyPartner });
+  registerEat(router, ctx, { requireUser, notifyPartner });
 
   router.get('/api/health', async (_req, res) => {
     sendJson(res, 200, { ok: true });

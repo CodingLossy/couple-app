@@ -148,6 +148,62 @@ function migrate(db) {
     CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id);
     CREATE INDEX IF NOT EXISTS idx_todos_due ON todos(due_date, id);
     CREATE INDEX IF NOT EXISTS idx_todos_owner ON todos(owner_id, id);
+
+    CREATE TABLE IF NOT EXISTS meal_rounds (
+      id INTEGER PRIMARY KEY,
+      day TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('open', 'revealed')),
+      result_mode TEXT,
+      result_cuisine TEXT,
+      result_quip TEXT,
+      rerolls INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      revealed_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS meal_votes (
+      id INTEGER PRIMARY KEY,
+      round_id INTEGER NOT NULL REFERENCES meal_rounds(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      energy TEXT NOT NULL,
+      mood TEXT NOT NULL,
+      budget TEXT NOT NULL,
+      mode TEXT NOT NULL,
+      cuisines TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE (round_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS places (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      cuisine TEXT NOT NULL,
+      mode TEXT NOT NULL CHECK (mode IN ('out', 'delivery')),
+      platform TEXT NOT NULL DEFAULT '',
+      url TEXT NOT NULL DEFAULT '',
+      note TEXT NOT NULL DEFAULT '',
+      visited INTEGER NOT NULL DEFAULT 0,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS meal_logs (
+      id INTEGER PRIMARY KEY,
+      round_id INTEGER REFERENCES meal_rounds(id) ON DELETE SET NULL,
+      mode TEXT NOT NULL,
+      cuisine TEXT NOT NULL,
+      place_id INTEGER REFERENCES places(id) ON DELETE SET NULL,
+      place_name TEXT NOT NULL DEFAULT '',
+      rating INTEGER,
+      note TEXT NOT NULL DEFAULT '',
+      photo_id INTEGER REFERENCES photos(id) ON DELETE SET NULL,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_meal_rounds_day ON meal_rounds(day, id);
+    CREATE INDEX IF NOT EXISTS idx_meal_votes_round ON meal_votes(round_id, user_id);
+    CREATE INDEX IF NOT EXISTS idx_meal_logs_created ON meal_logs(created_at);
   `);
 
   const insertQuestion = db.prepare('INSERT OR IGNORE INTO question_pool (text) VALUES (?)');
@@ -182,6 +238,10 @@ export function seedPresets(db) {
 export function emptyContent(db) {
   const tx = db.transaction(() => {
     db.exec(`
+      DELETE FROM meal_votes;
+      DELETE FROM meal_logs;
+      DELETE FROM meal_rounds;
+      DELETE FROM places;
       DELETE FROM daily_answers;
       DELETE FROM daily_questions;
       DELETE FROM diary_entries;
@@ -199,6 +259,10 @@ export function emptyContent(db) {
 export function emptyEverything(db) {
   const tx = db.transaction(() => {
     db.exec(`
+      DELETE FROM meal_votes;
+      DELETE FROM meal_logs;
+      DELETE FROM meal_rounds;
+      DELETE FROM places;
       DELETE FROM daily_answers;
       DELETE FROM daily_questions;
       DELETE FROM diary_entries;

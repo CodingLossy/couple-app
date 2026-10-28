@@ -1,6 +1,6 @@
-const CACHE = 'couple-shell-v4';
-const SHELL = ['/', '/css/app.css', '/js/app.js', '/js/util.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
-const PAGES = new Set(['/', '/#home', '/#album', '/#diary', '/#list', '/#ask', '/#cal', '/#settings', '/#guide']);
+const CACHE = 'couple-shell-v5';
+const SHELL = ['/', '/eat', '/eat.html', '/css/app.css', '/css/eat.css', '/js/app.js', '/js/util.js', '/js/eat.js', '/js/eat-decide.js', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
+const PAGES = new Set(['/', '/eat', '/#home', '/#album', '/#diary', '/#list', '/#ask', '/#cal', '/#settings', '/#guide']);
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -28,7 +28,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     try {
       const fresh = await fetch(request);
-      const cacheable = url.pathname === '/' || url.pathname.startsWith('/css/') || url.pathname.startsWith('/js/') || url.pathname.startsWith('/icons/') || url.pathname.endsWith('.webmanifest');
+      const cacheable = url.pathname === '/' || url.pathname === '/eat' || url.pathname === '/eat.html' || url.pathname.startsWith('/css/') || url.pathname.startsWith('/js/') || url.pathname.startsWith('/icons/') || url.pathname.endsWith('.webmanifest');
       if (fresh.ok && cacheable) {
         const cache = await caches.open(CACHE);
         cache.put(request, fresh.clone());
