@@ -275,6 +275,7 @@ function setupView() {
         el('p', { text: `${S.ready[1].displayName}，用户名 ${S.ready[1].username}` }),
         el('button', { class: 'btn full', type: 'button', text: '去登录', onclick: () => { S.ready = null; go('login'); } }),
       ]),
+      eatEntry(),
     ]);
   }
   const hours = Array.from({ length: 18 }, (_, index) => index + 6);
@@ -330,6 +331,7 @@ function setupView() {
       personFields('第二个人', 'b'),
       el('button', { class: 'btn full', type: 'submit', text: '创建我们的账号' }),
     ]),
+    eatEntry(),
   ]);
 }
 
@@ -360,6 +362,15 @@ function loginView() {
       field('密码', el('input', { class: 'input', name: 'password', type: 'password', autocomplete: 'current-password', required: true })),
       el('button', { class: 'btn full', type: 'submit', text: '进入' }),
     ]),
+    eatEntry(),
+  ]);
+}
+
+function eatEntry() {
+  return el('a', { class: 'eat-entry', href: '/eat' }, [
+    el('p', { class: 'kicker', text: '无需登录' }),
+    el('strong', { text: '今天吃啥 🍜' }),
+    el('p', { class: 'muted', text: '出去吃、点外卖，还是自己做？在这里决定，不碰你们的私密内容。' }),
   ]);
 }
 
@@ -499,6 +510,10 @@ async function loadHome(main, ctx) {
       el('p', { text: daily.daily.question }),
     ]));
   }
+  blocks.push(el('a', { class: 'entry-card', href: '/eat' }, [
+    el('p', { class: 'kicker', text: '今天吃啥' }),
+    el('p', { text: '出去吃、外卖，还是自己做？两个人都选完再揭晓。' }),
+  ]));
   const recent = photos.photos || [];
   blocks.push(el('button', { class: 'entry-card memory', type: 'button', onclick: () => go('album') }, [
     el('p', { class: 'kicker', text: '最近的回忆' }),

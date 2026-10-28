@@ -171,7 +171,9 @@ img { max-width: 100%; }
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   padding: calc(28px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom));
   background:
     radial-gradient(520px 240px at 50% -8%, var(--accent-soft), transparent 70%),
@@ -184,6 +186,7 @@ img { max-width: 100%; }
   box-shadow: var(--shadow);
 }
 .auth-card { width: min(480px, 100%); padding: 28px 20px 20px; align-self: center; }
+.eat-entry { margin-top: 16px; }
 .kicker { margin: 0; color: var(--accent-deep); letter-spacing: .16em; font-size: 13px; }
 h1, h2, h3 { font-family: var(--round); font-weight: 650; }
 h1 { font-size: 36px; margin: 8px 0 6px; }
@@ -311,10 +314,11 @@ a.btn { display: flex; align-items: center; justify-content: center; text-decora
 .count-card strong { display: block; font-family: var(--round); font-variant-numeric: tabular-nums; font-size: 28px; color: var(--accent-deep); }
 .count-card .peach { color: #C45A38; }
 html[data-theme="dark"] .count-card .peach { color: var(--peach); }
-.entry-card, .memory {
+.entry-card, .memory, .eat-entry {
   display: block;
   width: 100%;
   text-align: left;
+  text-decoration: none;
   border: 1px solid var(--line);
   background: var(--card);
   border-radius: var(--radius);

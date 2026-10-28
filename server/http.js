@@ -257,6 +257,7 @@ export function resolvePublic(publicRoot, pathname) {
 }
 
 export async function sendStatic(req, res, publicRoot, pathname) {
+  if (pathname === '/eat' || pathname === '/eat/') return sendStatic(req, res, publicRoot, '/eat.html');
   const full = pathname === '/' ? path.join(publicRoot, 'index.html') : resolvePublic(publicRoot, pathname);
   if (!full) throw httpError(404, '没有这个页面');
   let stat = null;
