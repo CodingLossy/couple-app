@@ -25,6 +25,7 @@ const DEFAULTS = {
   defaultTimezone: 'Asia/Shanghai',
   passwordN: 16384,
   loginLimit: 8,
+  icsLimit: 60,
   schedule: false,
   quiet: false,
   now: () => new Date(),
@@ -53,6 +54,7 @@ export function createApp(overrides = {}) {
   config.reminderHour = Number(config.reminderHour);
   config.passwordN = Number(config.passwordN);
   config.loginLimit = Number(config.loginLimit);
+  config.icsLimit = Number(config.icsLimit);
   if (!Number.isInteger(config.port) || config.port < 0 || config.port > 65535) throw new Error('PORT 不正确');
   if (!(config.sessionDays >= 1 && config.sessionDays <= 180)) throw new Error('SESSION_DAYS 需要在 1 到 180 之间');
   const uploadMb = config.maxUploadBytes / 1024 / 1024;
@@ -63,19 +65,23 @@ export function createApp(overrides = {}) {
   if (!TIMEZONES.some(([id]) => id === config.defaultTimezone)) {
     throw new Error(`不支持的 DEFAULT_TIMEZONE：${config.defaultTimezone}`);
   }
+  if (!Number.isInteger(config.icsLimit) || config.icsLimit < 1 || config.icsLimit > 1000) {
+    throw new Error('日历订阅的速率限制不正确');
+  }
   fs.mkdirSync(config.dataDir, { recursive: true });
   for (const folder of ['photos', 'thumbs', 'tmp']) fs.mkdirSync(path.join(config.dataDir, folder), { recursive: true });
   sweepTmp(config.dataDir);
   const db = openDatabase(config.dataDir);
   const vapidPublicKey = initVapid(config.dataDir, config.vapidSubject);
   const limiter = createLimiter(config.loginLimit);
+  const icsLimiter = createLimiter(config.icsLimit);
 
   async function notify(userId, payload) {
     if (typeof config.onNotify === 'function') config.onNotify(userId, payload);
     await sendPush(db, userId, payload);
   }
 
-  const ctx = { db, config, vapidPublicKey, limiter, notify };
+  const ctx = { db, config, vapidPublicKey, limiter, icsLimiter, notify };
   const router = createRouter();
   registerRoutes(router, ctx);
   const stopSchedule = config.schedule ? startScheduler(db, config, notify) : () => {};
@@ -91,6 +97,7 @@ export function createApp(overrides = {}) {
         pathname = req.url || '';
       }
       if (pathname === '/api/health') return;
+      if (pathname.startsWith('/api/cal/')) pathname = '/api/cal/[redacted]';
       console.log(`${req.method} ${pathname} ${res.statusCode} ${Date.now() - started}ms`);
     });
     try {

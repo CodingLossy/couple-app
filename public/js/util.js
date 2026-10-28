@@ -81,6 +81,7 @@ export function icon(name) {
     diary: ['M7 4.5h9a2 2 0 0 1 2 2v13H8.5A2.5 2.5 0 0 1 6 17V6.5A2 2 0 0 1 8 4.5'],
     list: ['M9 7h10', 'M9 12h10', 'M9 17h10', 'M5 7h.01', 'M5 12h.01', 'M5 17h.01'],
     ask: ['M5 6.5h14v8H9l-4 3.5v-11.5z'],
+    cal: ['M7 4.5h10a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1z', 'M6 9h12', 'M9 3.5v3', 'M15 3.5v3'],
   };
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');

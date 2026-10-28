@@ -4,11 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { createApp } from '../server/app.js';
 
-export async function startApp() {
+export async function startApp(overrides = {}) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'couple-app-'));
   const notes = [];
   const app = createApp({
-    dataDir,
     host: '127.0.0.1',
     port: 0,
     passwordN: 1024,
@@ -21,6 +20,8 @@ export async function startApp() {
     onNotify(userId, payload) {
       notes.push({ userId, payload });
     },
+    ...overrides,
+    dataDir,
   });
   await new Promise((resolve) => app.server.listen(0, '127.0.0.1', resolve));
   const { port } = app.server.address();

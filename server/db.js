@@ -121,10 +121,33 @@ function migrate(db) {
       sent_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS todos (
+      id INTEGER PRIMARY KEY,
+      title TEXT NOT NULL,
+      note TEXT NOT NULL DEFAULT '',
+      due_date TEXT,
+      due_time TEXT,
+      audience TEXT NOT NULL CHECK (audience IN ('private', 'assigned', 'shared')),
+      owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      completed_at TEXT,
+      completed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS calendar_tokens (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      token TEXT NOT NULL UNIQUE,
+      created_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_photos_kind_id ON photos(kind, id);
     CREATE INDEX IF NOT EXISTS idx_diary_user ON diary_entries(user_id, id);
     CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_todos_due ON todos(due_date, id);
+    CREATE INDEX IF NOT EXISTS idx_todos_owner ON todos(owner_id, id);
   `);
 
   const insertQuestion = db.prepare('INSERT OR IGNORE INTO question_pool (text) VALUES (?)');
@@ -163,6 +186,7 @@ export function emptyContent(db) {
       DELETE FROM daily_questions;
       DELETE FROM diary_entries;
       DELETE FROM checklist_items;
+      DELETE FROM todos;
       DELETE FROM photos;
       DELETE FROM anniversaries;
       DELETE FROM push_log;
@@ -179,6 +203,8 @@ export function emptyEverything(db) {
       DELETE FROM daily_questions;
       DELETE FROM diary_entries;
       DELETE FROM checklist_items;
+      DELETE FROM todos;
+      DELETE FROM calendar_tokens;
       DELETE FROM photos;
       DELETE FROM anniversaries;
       DELETE FROM push_subscriptions;

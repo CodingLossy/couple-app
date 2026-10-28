@@ -73,6 +73,27 @@ export function asVisibility(value) {
   return value;
 }
 
+export function asTime(value) {
+  if (value == null || value === '') return '';
+  if (typeof value !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) throw httpError(400, '时间格式应为 HH:MM');
+  return value;
+}
+
+export function asScope(value) {
+  if (value !== 'mine' && value !== 'theirs' && value !== 'ours' && value !== 'received') {
+    throw httpError(400, '请选择这是谁的待办');
+  }
+  return value;
+}
+
+export function asMonth(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}$/.test(value)) throw httpError(400, '月份不正确');
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(5, 7));
+  if (year < 1900 || year > 2100 || month < 1 || month > 12) throw httpError(400, '月份不正确');
+  return value;
+}
+
 export function asLimit(value, fallback, max) {
   const number = value == null || value === '' ? fallback : Number(value);
   if (!Number.isInteger(number) || number < 1) return fallback;

@@ -25,10 +25,13 @@ export function createRouter() {
   const routes = [];
   function add(method, pathname, handler) {
     const keys = [];
-    const pattern = pathname.replace(/:([A-Za-z0-9_]+)/g, (_, key) => {
-      keys.push(key);
-      return '([^/]+)';
-    });
+    const pattern = pathname.split(/:([A-Za-z0-9_]+)/).map((part, index) => {
+      if (index % 2 === 1) {
+        keys.push(part);
+        return '([^/]+)';
+      }
+      return part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }).join('');
     routes.push({ method, regex: new RegExp(`^${pattern}$`), keys, handler });
   }
   return {

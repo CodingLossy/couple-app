@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { daysTogether, nextOccurrence, zonedParts } from '../server/time.js';
+import { daysTogether, nextOccurrence, occurrenceInMonth, zonedDateTimeToUtc, zonedParts } from '../server/time.js';
 
 test('在一起的天数从第 1 天算起', () => {
   assert.equal(daysTogether('2026-10-27', '2026-10-27'), 1);
@@ -25,4 +25,18 @@ test('按时区取今天', () => {
   const shanghai = zonedParts(new Date('2026-10-27T16:05:00Z'), 'Asia/Shanghai');
   assert.equal(shanghai.date, '2026-10-28');
   assert.equal(shanghai.hour, 0);
+});
+
+test('把本地时间换算成 UTC，含夏令时', () => {
+  const stamp = (date) => date.toISOString().slice(0, 19);
+  assert.equal(stamp(zonedDateTimeToUtc('2026-10-28', '15:30', 'Asia/Shanghai')), '2026-10-28T07:30:00');
+  assert.equal(stamp(zonedDateTimeToUtc('2026-07-15', '15:30', 'America/Los_Angeles')), '2026-07-15T22:30:00');
+  assert.equal(stamp(zonedDateTimeToUtc('2026-01-15', '15:30', 'America/Los_Angeles')), '2026-01-15T23:30:00');
+});
+
+test('闰日纪念日在平年落到二月的最后一天', () => {
+  assert.equal(occurrenceInMonth('2024-02-29', true, '2026-02'), '2026-02-28');
+  assert.equal(occurrenceInMonth('2024-02-29', true, '2024-02'), '2024-02-29');
+  assert.equal(occurrenceInMonth('2024-05-01', true, '2026-05'), '2026-05-01');
+  assert.equal(occurrenceInMonth('2024-05-01', false, '2026-05'), null);
 });

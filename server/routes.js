@@ -15,6 +15,7 @@ import {
 } from './http.js';
 import { createSession, hashPassword, readSession, revokeToken, revokeUserSessions, verifyPassword } from './auth.js';
 import { emptyMedia, mediaPath, processImage, removeStored } from './images.js';
+import { registerCalendar } from './calendar.js';
 import { daysBetween, daysTogether, nextOccurrence, zonedParts } from './time.js';
 import {
   asDate,
@@ -347,6 +348,8 @@ function meta(ctx) {
 }
 
 export function registerRoutes(router, ctx) {
+  registerCalendar(router, ctx, { requireUser, notifyPartner });
+
   router.get('/api/health', async (_req, res) => {
     sendJson(res, 200, { ok: true });
   });
@@ -933,6 +936,14 @@ export function registerRoutes(router, ctx) {
       LEFT JOIN users u ON u.id = c.completed_by
       ORDER BY c.sort_order, c.id
     `).all().map((row) => presentChecklist(row));
+    const todos = ctx.db.prepare(`
+      SELECT t.*, author.display_name AS author_name, done.display_name AS completed_name
+      FROM todos t
+      JOIN users author ON author.id = t.created_by
+      LEFT JOIN users done ON done.id = t.completed_by
+      WHERE t.audience = 'shared' OR t.audience = 'assigned' OR (t.audience = 'private' AND t.owner_id = ?)
+      ORDER BY t.id
+    `).all(user.id);
     const partner = ctx.db.prepare('SELECT id FROM users WHERE id != ?').get(user.id);
     const answers = ctx.db.prepare(`
       SELECT d.day, q.text AS question, mine.answer AS my_answer, theirs.answer AS their_answer
@@ -957,12 +968,13 @@ export function registerRoutes(router, ctx) {
       app: '两个人',
       exportedAt: nowIso(),
       exportedBy: me.displayName,
-      note: '包含双方可见的内容、你自己的私密日记，以及你能看到的照片。不包含对方仅自己可见的日记。',
+      note: '包含双方可见的内容、你自己的私密日记和私密待办，以及你能看到的照片。不包含对方仅自己可见的日记和待办。',
     };
     zip.addBuffer(Buffer.from(JSON.stringify({ manifest, togetherSince: me.togetherSince, timezone: me.timezone }, null, 2)), 'manifest.json');
     zip.addBuffer(Buffer.from(JSON.stringify(diary, null, 2)), 'diary.json');
     zip.addBuffer(Buffer.from(JSON.stringify(anniversaries, null, 2)), 'anniversaries.json');
     zip.addBuffer(Buffer.from(JSON.stringify(checklist, null, 2)), 'checklist.json');
+    zip.addBuffer(Buffer.from(JSON.stringify(todos, null, 2)), 'todos.json');
     zip.addBuffer(Buffer.from(JSON.stringify(answers, null, 2)), 'daily.json');
     for (const photo of photos) {
       const full = mediaPath(ctx.config.dataDir, 'photos', photo.stored_name);

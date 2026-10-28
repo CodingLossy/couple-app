@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import webpush from 'web-push';
 
-const PUSH_URLS = new Set(['/', '/#home', '/#album', '/#diary', '/#list', '/#ask', '/#settings', '/#guide']);
+const PUSH_URLS = new Set(['/', '/#home', '/#album', '/#diary', '/#list', '/#ask', '/#cal', '/#settings', '/#guide']);
 
 export function initVapid(dataDir, subject) {
   const file = path.join(dataDir, 'vapid.json');

@@ -34,6 +34,35 @@ export function nextOccurrence(dateStr, yearly, today) {
   return candidate;
 }
 
+export function occurrenceInMonth(dateStr, yearly, monthStr) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr || '') || !/^\d{4}-\d{2}$/.test(monthStr || '')) return null;
+  const year = Number(monthStr.slice(0, 4));
+  const month = Number(monthStr.slice(5, 7));
+  if (month < 1 || month > 12) return null;
+  if (!yearly) return dateStr.startsWith(`${monthStr}-`) ? dateStr : null;
+  const eventMonth = Number(dateStr.slice(5, 7));
+  const eventDay = Number(dateStr.slice(8, 10));
+  if (eventMonth !== month) return null;
+  return clampDate(year, month, eventDay);
+}
+
+export function zonedDateTimeToUtc(dateStr, timeStr, timeZone) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr || '') || !/^([01]\d|2[0-3]):[0-5]\d$/.test(timeStr || '')) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = timeStr.split(':').map(Number);
+  const want = Date.UTC(year, month - 1, day, hour, minute, 0);
+  let utc = want;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const parts = zonedParts(new Date(utc), timeZone);
+    const [gotYear, gotMonth, gotDay] = parts.date.split('-').map(Number);
+    const got = Date.UTC(gotYear, gotMonth - 1, gotDay, parts.hour, parts.minute, 0);
+    const delta = want - got;
+    if (delta === 0) return new Date(utc);
+    utc += delta;
+  }
+  return new Date(utc);
+}
+
 export function zonedParts(date, timeZone) {
   const fmt = new Intl.DateTimeFormat('en-US', {
     timeZone,
