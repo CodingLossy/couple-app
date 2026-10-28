@@ -116,15 +116,27 @@ function presentRound(db, round, userId) {
     mineSubmitted: mine,
     partnerSubmitted: partner,
     rerolls: round.rerolls,
+    partnerActive: partnerBusy(db, userId) && !partner,
     result: revealed ? {
       mode: round.result_mode,
       modeName: MODES.find((mode) => mode.id === round.result_mode)?.name || '',
       cuisine: round.result_cuisine,
       cuisineName: CUISINES.find((cuisine) => cuisine.id === round.result_cuisine)?.name || '',
+      emoji: CUISINES.find((cuisine) => cuisine.id === round.result_cuisine)?.emoji || '',
       quip: round.result_quip || '就这么定了。',
+      usedFallback: round.result_fallback === 1,
+      wheel: round.result_wheel ? JSON.parse(round.result_wheel) : [],
       places: suggestFor(db, round.result_mode, round.result_cuisine),
     } : null,
   };
+}
+
+function partnerBusy(db, userId) {
+  const partner = partnerOf(db, userId);
+  if (!partner) return false;
+  const row = db.prepare('SELECT updated_at FROM meal_presence WHERE user_id = ?').get(partner.id);
+  if (!row) return false;
+  return Date.now() - Date.parse(row.updated_at) < 20000;
 }
 
 function suggestFor(db, mode, cuisine) {
@@ -142,9 +154,10 @@ function reveal(ctx, round) {
   const now = nowIso();
   ctx.db.prepare(`
     UPDATE meal_rounds
-    SET status = 'revealed', result_mode = ?, result_cuisine = ?, result_quip = ?, revealed_at = ?
+    SET status = 'revealed', result_mode = ?, result_cuisine = ?, result_quip = ?,
+        result_fallback = ?, result_wheel = ?, revealed_at = ?
     WHERE id = ?
-  `).run(result.mode.id, result.cuisine.id, result.quip, now, round.id);
+  `).run(result.mode.id, result.cuisine.id, result.quip, result.usedFallback ? 1 : 0, JSON.stringify(result.wheel || []), now, round.id);
   return result;
 }
 
@@ -171,6 +184,7 @@ export function registerEat(router, ctx, { requireUser, notifyPartner }) {
     const round = latestRound(ctx.db, day);
     sendJson(res, 200, {
       today: day,
+      partnerActive: partnerBusy(ctx.db, user.id),
       round: presentRound(ctx.db, round, user.id),
       places: listPlaces(ctx.db),
       logs: ctx.db.prepare(`
@@ -179,6 +193,15 @@ export function registerEat(router, ctx, { requireUser, notifyPartner }) {
       `).all(),
       recentCuisines: recentFromLogs(ctx, day),
     });
+  });
+
+  router.post('/api/eat/presence', async (req, res) => {
+    const user = requireUser(ctx, req);
+    ctx.db.prepare(`
+      INSERT INTO meal_presence (user_id, updated_at) VALUES (?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET updated_at = excluded.updated_at
+    `).run(user.id, nowIso());
+    sendJson(res, 200, { ok: true });
   });
 
   router.post('/api/eat/vote', async (req, res) => {
@@ -230,8 +253,10 @@ export function registerEat(router, ctx, { requireUser, notifyPartner }) {
     });
     if (!result.ok) throw httpError(409, '没有别的选择了');
     ctx.db.prepare(`
-      UPDATE meal_rounds SET result_mode = ?, result_cuisine = ?, result_quip = ?, rerolls = rerolls + 1 WHERE id = ?
-    `).run(result.mode.id, result.cuisine.id, result.quip, round.id);
+      UPDATE meal_rounds
+      SET result_mode = ?, result_cuisine = ?, result_quip = ?, result_fallback = ?, result_wheel = ?, rerolls = rerolls + 1
+      WHERE id = ?
+    `).run(result.mode.id, result.cuisine.id, result.quip, result.usedFallback ? 1 : 0, JSON.stringify(result.wheel || []), round.id);
     const fresh = ctx.db.prepare('SELECT * FROM meal_rounds WHERE id = ?').get(round.id);
     sendJson(res, 200, { round: presentRound(ctx.db, fresh, user.id) });
   });

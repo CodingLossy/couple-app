@@ -5,17 +5,17 @@ export const MODES = [
 ];
 
 export const CUISINES = [
-  { id: 'hotpot', name: '火锅', price: 2 },
-  { id: 'chuan', name: '川湘', price: 1 },
-  { id: 'yue', name: '粤式', price: 3 },
-  { id: 'japanese', name: '日料', price: 3 },
-  { id: 'korean', name: '韩餐', price: 2 },
-  { id: 'noodles', name: '面', price: 1 },
-  { id: 'light', name: '轻食', price: 2 },
-  { id: 'bbq', name: '烧烤', price: 2 },
-  { id: 'western', name: '西餐', price: 3 },
-  { id: 'sea', name: '东南亚', price: 2 },
-  { id: 'brunch', name: '早午餐', price: 2 },
+  { id: 'hotpot', name: '火锅', price: 2, emoji: '🍲' },
+  { id: 'chuan', name: '川湘', price: 1, emoji: '🌶️' },
+  { id: 'yue', name: '粤式', price: 3, emoji: '🥟' },
+  { id: 'japanese', name: '日料', price: 3, emoji: '🍣' },
+  { id: 'korean', name: '韩餐', price: 2, emoji: '🍜' },
+  { id: 'noodles', name: '面', price: 1, emoji: '🍝' },
+  { id: 'light', name: '轻食', price: 2, emoji: '🥗' },
+  { id: 'bbq', name: '烧烤', price: 2, emoji: '🍢' },
+  { id: 'western', name: '西餐', price: 3, emoji: '🥩' },
+  { id: 'sea', name: '东南亚', price: 2, emoji: '🍛' },
+  { id: 'brunch', name: '早午餐', price: 2, emoji: '🥞' },
 ];
 
 const MOOD_BOOST = {
@@ -137,11 +137,17 @@ export function decide({ votes = [], recentCuisines = [], places = [], previous 
   if (!cuisine) return { ok: false, reason: 'no-alternative', previous };
   const list = QUIPS[mode.id] || QUIPS.delivery;
   const quip = list[Math.floor(random() * list.length) % list.length];
+  const wheel = usedFallback ? pool.map((item) => ({
+    id: item.id,
+    name: item.name,
+    emoji: CUISINES.find((row) => row.id === item.id)?.emoji || '🍽️',
+  })) : [];
   return {
     ok: true,
     mode: { id: mode.id, name: mode.name },
-    cuisine: { id: cuisine.id, name: cuisine.name },
+    cuisine: { id: cuisine.id, name: cuisine.name, emoji: CUISINES.find((row) => row.id === cuisine.id)?.emoji || '🍽️' },
     usedFallback,
+    wheel,
     quip,
     places: suggestPlaces(places, mode.id, cuisine.id),
   };

@@ -156,6 +156,8 @@ function migrate(db) {
       result_mode TEXT,
       result_cuisine TEXT,
       result_quip TEXT,
+      result_fallback INTEGER NOT NULL DEFAULT 0,
+      result_wheel TEXT,
       rerolls INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
       revealed_at TEXT
@@ -201,6 +203,11 @@ function migrate(db) {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS meal_presence (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_meal_rounds_day ON meal_rounds(day, id);
     CREATE INDEX IF NOT EXISTS idx_meal_votes_round ON meal_votes(round_id, user_id);
     CREATE INDEX IF NOT EXISTS idx_meal_logs_created ON meal_logs(created_at);
@@ -211,6 +218,13 @@ function migrate(db) {
     for (const text of items) insertQuestion.run(text);
   });
   seed(QUESTIONS);
+  const roundCols = db.prepare('PRAGMA table_info(meal_rounds)').all();
+  if (roundCols.length && !roundCols.some((col) => col.name === 'result_fallback')) {
+    db.exec('ALTER TABLE meal_rounds ADD COLUMN result_fallback INTEGER NOT NULL DEFAULT 0');
+  }
+  if (roundCols.length && !roundCols.some((col) => col.name === 'result_wheel')) {
+    db.exec('ALTER TABLE meal_rounds ADD COLUMN result_wheel TEXT');
+  }
 }
 
 export function getSetting(db, key, fallback = null) {
@@ -238,6 +252,7 @@ export function seedPresets(db) {
 export function emptyContent(db) {
   const tx = db.transaction(() => {
     db.exec(`
+      DELETE FROM meal_presence;
       DELETE FROM meal_votes;
       DELETE FROM meal_logs;
       DELETE FROM meal_rounds;
@@ -259,6 +274,7 @@ export function emptyContent(db) {
 export function emptyEverything(db) {
   const tx = db.transaction(() => {
     db.exec(`
+      DELETE FROM meal_presence;
       DELETE FROM meal_votes;
       DELETE FROM meal_logs;
       DELETE FROM meal_rounds;

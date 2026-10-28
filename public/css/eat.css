@@ -177,6 +177,41 @@ label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color:
   padding: 10px 16px;
   z-index: 5;
 }
+.dots { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+.dots span { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: block; }
+.dots i.on { background: var(--accent-deep); }
+.partner { margin: 0; font-weight: 700; color: var(--muted); }
+.partner.ready { color: var(--accent-deep); }
+.cuisine-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.stamp {
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  transform: rotate(-8deg);
+}
+.stamped.love .stamp { color: var(--accent-deep); }
+.stamped.crave .stamp { color: #C45A38; }
+html[data-theme="dark"] .stamped.crave .stamp { color: #FFB38A; }
+.stamped.skip { opacity: .55; }
+.faces { display: flex; justify-content: center; }
+.avatar {
+  width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent-deep); font-weight: 800;
+}
+.avatar.overlap { margin-left: -14px; background: var(--card); box-shadow: 0 0 0 2px var(--accent); }
+.wheel { position: relative; width: 220px; height: 220px; margin: 8px auto; border-radius: 50%; border: 10px solid var(--accent-soft); }
+.wheel span {
+  position: absolute; left: 50%; top: 50%; font-size: 22px;
+  transform: translate(-50%, -50%) rotate(calc(var(--i) * 360deg / var(--n))) translateY(-78px) rotate(calc(var(--i) * -360deg / var(--n)));
+}
+.fall { position: fixed; inset: 0; pointer-events: none; z-index: 8; overflow: hidden; }
+.fall i { position: absolute; top: -24px; color: #E8687F; font-style: normal; font-size: 18px; animation: drift 1.5s ease-in forwards; }
+@keyframes drift { to { transform: translateY(105vh) rotate(28deg); opacity: .2; } }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
+  .fall { display: none; }
 }

@@ -24,8 +24,11 @@ const S = {
   logs: [],
   recent: [],
   round: null,
+  partnerActive: false,
   filter: '',
 };
+let pollTimer = 0;
+let celebratedKey = '';
 
 function blank() {
   return { energy: '', mood: 'any', budget: '', mode: '', cuisines: {} };
@@ -136,6 +139,7 @@ function render() {
     ]));
   }
   root.replaceChildren(...parts);
+  schedulePoll();
 }
 
 function tab(id, label) {
@@ -164,9 +168,28 @@ function whoView() {
   ]);
 }
 
+function progress(step) {
+  const order = ['state', 'mode', 'cuisine'];
+  const index = order.indexOf(step);
+  if (index < 0) return null;
+  return h('div', { class: 'dots', 'aria-label': `第 ${index + 1} 步，共 3 步` }, [
+    h('span', { text: `${index + 1} / 3` }),
+    ...order.map((_, dot) => h('i', { class: dot <= index ? 'on' : '' })),
+  ]);
+}
+
+function partnerStatus() {
+  if (!S.authed) return null;
+  const ready = S.round?.partnerSubmitted;
+  const text = ready ? '对方已选好' : (S.partnerActive || S.round?.partnerActive ? '对方也在选' : '等对方打开');
+  return h('p', { class: ready ? 'partner ready' : 'partner', text });
+}
+
 function stateView() {
   const who = S.authed ? '你' : (S.seat === 'b' ? 'TA' : '你');
   return h('section', { class: 'stack' }, [
+    progress('state'),
+    partnerStatus(),
     h('p', { class: 'kicker', text: `${who}来选` }),
     h('h2', { text: '现在什么状态？' }),
     group('累不累', [['tired', '很累'], ['ok', '还好'], ['fresh', '有精神']], 'energy'),
@@ -194,7 +217,9 @@ function group(title, options, key) {
 
 function modeView() {
   return h('section', { class: 'stack' }, [
-    h('p', { class: 'kicker', text: '第一步' }),
+    progress('mode'),
+    partnerStatus(),
+    h('p', { class: 'kicker', text: '第 2 步' }),
     h('h2', { text: '怎么吃？' }),
     ...MODES.map((mode) => h('button', {
       class: S.draft.mode === mode.id ? 'big active' : 'big',
@@ -206,22 +231,31 @@ function modeView() {
 }
 
 function cuisineView() {
+  const stamp = { love: 'LIKE', crave: '超想吃', skip: '跳过' };
   return h('section', {}, [
-    h('p', { class: 'kicker', text: '第二步' }),
+    progress('cuisine'),
+    partnerStatus(),
+    h('p', { class: 'kicker', text: '第 3 步' }),
     h('h2', { text: '想吃哪一类？' }),
     h('p', { class: 'muted', text: '不点就是都可以。跳过的不会出现在结果里。' }),
-    ...CUISINES.map((cuisine) => h('div', { class: 'cuisine' }, [
-      h('strong', { text: cuisine.name }),
-      h('div', { class: 'level' }, [['skip', '跳过'], ['love', '喜欢'], ['crave', '超想吃']].map(([id, label]) => h('button', {
-        type: 'button',
-        class: S.draft.cuisines[cuisine.id] === id ? 'active' : '',
-        text: label,
-        onclick: () => {
-          S.draft.cuisines[cuisine.id] = S.draft.cuisines[cuisine.id] === id ? 'ok' : id;
-          render();
-        },
-      }))),
-    ])),
+    ...CUISINES.map((cuisine) => {
+      const level = S.draft.cuisines[cuisine.id];
+      return h('div', { class: level && level !== 'ok' ? `cuisine stamped ${level}` : 'cuisine' }, [
+        h('div', { class: 'cuisine-name' }, [
+          h('strong', { text: `${cuisine.emoji} ${cuisine.name}` }),
+          stamp[level] ? h('span', { class: `stamp ${level}`, text: stamp[level] }) : null,
+        ]),
+        h('div', { class: 'level' }, [['skip', '跳过'], ['love', 'LIKE'], ['crave', '超想吃']].map(([id, label]) => h('button', {
+          type: 'button',
+          class: level === id ? 'active' : '',
+          text: label,
+          onclick: () => {
+            S.draft.cuisines[cuisine.id] = level === id ? 'ok' : id;
+            render();
+          },
+        }))),
+      ]);
+    }),
     h('div', { class: 'sticky' }, [h('button', { class: 'btn', type: 'button', text: S.authed ? '提交' : (S.solo || S.seat === 'b' ? '揭晓' : '藏起来'), onclick: finishPick })]),
   ]);
 }
@@ -270,8 +304,10 @@ function coverView() {
 
 function waitView() {
   return h('section', { class: 'cover' }, [
+    progress('cuisine'),
+    partnerStatus(),
     h('p', { class: 'kicker', text: '你已经选好了' }),
-    h('h2', { text: '等 TA' }),
+    h('h2', { text: S.round?.partnerSubmitted ? '对方已选好' : '等 TA' }),
     h('p', { text: '对方提交之后，这里才会揭晓。' }),
     h('button', { class: 'btn', type: 'button', text: '看看好了没', onclick: async () => { await refreshToday(); render(); } }),
   ]);
@@ -279,9 +315,12 @@ function waitView() {
 
 function serverResult(result) {
   return {
+    ok: true,
     mode: { id: result.mode, name: result.modeName },
-    cuisine: { id: result.cuisine, name: result.cuisineName },
+    cuisine: { id: result.cuisine, name: result.cuisineName, emoji: result.emoji },
     quip: result.quip,
+    usedFallback: result.usedFallback,
+    wheel: result.wheel || [],
     places: result.places || [],
   };
 }
@@ -291,12 +330,16 @@ function revealView(result, remote) {
     return h('section', { class: 'stack' }, [h('h2', { text: '这轮没选出结果' }), h('button', { class: 'btn', type: 'button', text: '重新选', onclick: resetPick })]);
   }
   const place = result.places?.[0];
+  const duo = S.authed || !S.solo;
+  maybeCelebrate(`${result.mode.id}-${result.cuisine.id}`);
   return h('section', { class: 'stack' }, [
     h('article', { class: 'result-card' }, [
-      h('p', { class: 'kicker', text: '就决定是' }),
-      h('h2', { text: result.mode.name }),
-      h('p', { class: 'muted', text: result.cuisine.name }),
-      h('p', { text: result.quip }),
+      duo ? faces() : null,
+      h('p', { class: 'kicker', text: duo ? '你们俩今晚都想吃这个' : '今晚就吃这个' }),
+      h('h2', { text: `${result.cuisine.emoji || ''} ${result.cuisine.name}`.trim() }),
+      h('p', { text: result.mode.name }),
+      h('p', { class: 'muted', text: result.quip }),
+      result.usedFallback && result.wheel?.length ? wheelView(result.wheel, result.cuisine.id) : null,
       place ? h('a', { class: 'place', href: place.url || '#places', text: `${place.name}${place.url ? ' · 打开链接' : ''}` }) : null,
     ]),
     rerollAllowed(remote ? S.round.rerolls : S.rerolls) ? h('button', { class: 'btn ghost', type: 'button', text: '换一个（仅一次）', onclick: () => reroll(remote) }) : null,
@@ -328,6 +371,40 @@ async function reroll(remote) {
   S.rerolls = 1;
   S.result = next;
   render();
+}
+
+function faces() {
+  const mine = S.authed ? [...(S.me?.displayName || '我')].slice(-1)[0] : '我';
+  const theirs = S.authed ? [...(S.me?.partner?.displayName || 'TA')].slice(-1)[0] : 'TA';
+  return h('div', { class: 'faces' }, [
+    h('span', { class: 'avatar', text: mine }),
+    h('span', { class: 'avatar overlap', text: theirs }),
+  ]);
+}
+
+function wheelView(items, activeId) {
+  return h('div', { class: 'wheel', style: `--n:${items.length}` }, items.map((item, index) => h('span', {
+    class: item.id === activeId ? 'on' : '',
+    style: `--i:${index}`,
+    text: item.emoji,
+  })));
+}
+
+function maybeCelebrate(key) {
+  if (celebratedKey === key) return;
+  celebratedKey = key;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const layer = document.createElement('div');
+  layer.className = 'fall';
+  for (let index = 0; index < 18; index += 1) {
+    const bit = document.createElement('i');
+    bit.textContent = index % 2 ? '♥' : '♡';
+    bit.style.left = `${4 + Math.random() * 92}%`;
+    bit.style.animationDelay = `${Math.random() * 0.25}s`;
+    layer.append(bit);
+  }
+  document.body.append(layer);
+  setTimeout(() => layer.remove(), 1600);
 }
 
 function recordForm(result, remote) {
@@ -491,6 +568,7 @@ function resetPick() {
 async function refreshToday() {
   const data = await api('/api/eat/today');
   S.round = data.round;
+  S.partnerActive = Boolean(data.partnerActive || data.round?.partnerActive);
   S.places = data.places || [];
   S.logs = (data.logs || []).map((log) => ({ ...log, date: String(log.created_at).slice(0, 10) }));
   S.recent = data.recentCuisines || [];
@@ -517,6 +595,21 @@ async function boot() {
   }
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+function schedulePoll() {
+  clearTimeout(pollTimer);
+  if (!S.authed || S.tab !== 'pick' || S.round?.result) return;
+  pollTimer = setTimeout(async () => {
+    try {
+      if (['state', 'mode', 'cuisine'].includes(S.step)) await api('/api/eat/presence', { method: 'POST', json: {} });
+      const before = `${S.round?.partnerSubmitted}-${S.partnerActive}-${S.round?.status}`;
+      await refreshToday();
+      const after = `${S.round?.partnerSubmitted}-${S.partnerActive}-${S.round?.status}`;
+      if (before !== after) render();
+    } catch { /* 轮询失败时保持当前画面 */ }
+    schedulePoll();
+  }, 4000);
 }
 
 boot();

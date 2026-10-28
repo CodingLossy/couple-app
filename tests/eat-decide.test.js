@@ -54,6 +54,11 @@ test('没有交集时用双方都不排斥的菜系兜底', () => {
   assert.equal(result.usedFallback, true);
   assert.notEqual(result.cuisine.id, 'hotpot');
   assert.notEqual(result.cuisine.id, 'noodles');
+  assert.ok(result.wheel.length >= 2);
+  assert.ok(result.wheel.every((item) => item.emoji));
+  const direct = decide({ votes: [{ ...base, cuisines: { noodles: 'crave' } }], random: () => 0 });
+  assert.equal(direct.usedFallback, false);
+  assert.deepEqual(direct.wheel, []);
 });
 
 test('换一个会避开上一次，而且只能换一次', () => {

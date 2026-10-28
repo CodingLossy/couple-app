@@ -26,6 +26,7 @@ test('今天吃啥免登录可打开，私密接口仍然要登录', async () =>
     assert.equal((await request(ctx.base, null, '/api/eat/today')).status, 401);
     assert.equal((await request(ctx.base, null, '/api/eat/places', { method: 'POST', json: { name: 'x' } })).status, 401);
     assert.equal((await request(ctx.base, null, '/api/eat/vote', { method: 'POST', json: {} })).status, 401);
+    assert.equal((await request(ctx.base, null, '/api/eat/presence', { method: 'POST', json: {} })).status, 401);
     const css = await request(ctx.base, null, '/css/eat.css');
     const script = await request(ctx.base, null, '/js/eat-decide.js');
     assert.equal(css.status, 200);
@@ -47,6 +48,10 @@ test('登录后两人都提交才揭晓，并且只能再换一次', async () =>
     assert.equal((await request(ctx.base, personA, '/api/login', { method: 'POST', json: USERS[0] })).status, 200);
     assert.equal((await request(ctx.base, personB, '/api/login', { method: 'POST', json: USERS[1] })).status, 200);
 
+    assert.equal((await request(ctx.base, personA, '/api/eat/presence', { method: 'POST', json: {} })).status, 200);
+    const looking = await request(ctx.base, personB, '/api/eat/today');
+    assert.equal(looking.data.partnerActive, true);
+    assert.equal(looking.data.round, null);
     const first = await request(ctx.base, personA, '/api/eat/vote', { method: 'POST', json: vote('delivery', 'hotpot') });
     assert.equal(first.status, 200);
     assert.equal(first.data.round.result, null);
