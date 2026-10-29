@@ -3,6 +3,8 @@ data/
 backups/
 data-before-restore-*/
 .env
+.env.*
+!.env.example
 *.log
 .DS_Store
 tmp/
